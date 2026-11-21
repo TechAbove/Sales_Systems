@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weekly Sales Distribution Dashboard (Mon–Sat)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        
+        body {
+            background: #f4f6f9;
+            color: #1f2937;
+            padding: 24px;
+        }
+        
+        .wrapper {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: #fff;
+            padding: 20px 28px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .header h1 {
+            font-size: 1.4rem;
+            color: #111827;
+        }
+        
+        .header p {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: #2196F3;
+            color: #fff;
+            width: 100%;
+            margin-top: 8px;
+        }
+        
+        .btn-primary:hover {
+            background: #1976D2;
+        }
+        
+        .btn-print {
+            background: #111827;
+            color: #fff;
+        }
+        
+        .btn-print:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1.3fr;
+            gap: 24px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: #fff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        
+        .card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+            color: #111827;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+        
+        .input-group {
+            margin-bottom: 12px;
+        }
+        
+        .input-group label {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #374151;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .error {
+            display: none;
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            margin-bottom: 14px;
+        }
+        
+        .chart-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 380px;
+            text-align: center;
+        }
+        
+        .placeholder {
+            color: #6b7280;
+            font-size: 0.95rem;
+            padding: 40px 20px;
+            border: 2px dashed #e5e7eb;
+            border-radius: 10px;
+            width: 100%;
+        }
+        
+        canvas {
+            max-width: 100%;
+            height: auto;
+            display: none;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            display: none;
+            font-size: 0.9rem;
+        }
+        
+        th,
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+        }
+        
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+        }
+        
+        tr:last-child td {
+            font-weight: 700;
+            border-top: 2px solid #d1d5db;
+            border-bottom: none;
+        }
+        
+        @media print {
+            body {
+                background: #fff;
+                padding: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            .card,
+            .header {
+                box-shadow: none;
+                border: 1px solid #e5e7eb;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <div class="header">
+            <div>
+                <h1>Sales Distribution (Monday – Saturday)</h1>
+                <p id="subtitle">Enter daily sales figures in KES from Monday to Saturday to generate your chart.</p>
+            </div>
+            <button type="button" class="btn btn-print no-print" id="printBtn" disabled onclick="window.print()">Print Report</button>
+        </div>
+
+        <div class="grid">
+            <div class="card no-print">
+                <h2>Enter Weekly Sales Data (KES)</h2>
+                <div class="error" id="errorBox"></div>
+                <div class="input-group">
+                    <label for="mon"><span class="dot" style="background:#4CAF50;"></span>Monday Sales (KES)</label>
+                    <input type="number" id="mon" step="any" min="0" placeholder="e.g. 2000" />
+                </div>
+                <div class="input-group">
+                    <label for="tue"><span class="dot" style="background:#2196F3;"></span>Tuesday Sales (KES)</label>
+                    <input type="number" id="tue" step="any" min="0" placeholder="e.g. 2500" />
+                </div>
+                <div class="input-group">
+                    <label for="wed"><span class="dot" style="background:#FF9800;"></span>Wednesday Sales (KES)</label>
+                    <input type="number" id="wed" step="any" min="0" placeholder="e.g. 1800" />
+                </div>
+                <div class="input-group">
+                    <label for="thu"><span class="dot" style="background:#9C27B0;"></span>Thursday Sales (KES)</label>
+                    <input type="number" id="thu" step="any" min="0" placeholder="e.g. 3100" />
+                </div>
+                <div class="input-group">
+                    <label for="fri"><span class="dot" style="background:#E91E63;"></span>Friday Sales (KES)</label>
+                    <input type="number" id="fri" step="any" min="0" placeholder="e.g. 4200" />
+                </div>
+                <div class="input-group">
+                    <label for="sat"><span class="dot" style="background:#009688;"></span>Saturday Sales (KES)</label>
+                    <input type="number" id="sat" step="any" min="0" placeholder="e.g. 3800" />
+                </div>
+                <button type="button" class="btn btn-primary" onclick="generateChart()">Generate report of the week</button>
+            </div>
+
+            <div class="card">
+                <h2>Sales Distribution Chart</h2>
+                <div class="chart-area">
+                    <div class="placeholder" id="placeholder">Your pie chart will appear here after you enter sales for <strong>Monday to Saturday</strong> and click <strong>Generate report of the week</strong>.</div>
+                    <canvas id="pieCanvas" width="380" height="380"></canvas>
+                </div>
+                <table id="summaryTable">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Sales Amount (KES)</th>
+                            <th>Share (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function formatKes(amount) {
+            return "KES " + amount.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function generateChart() {
+            var days = new Array("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday");
+            var colors = new Array("#4CAF50", "#2196F3", "#FF9800", "#9C27B0", "#E91E63", "#009688");
+            var ids = new Array("mon", "tue", "wed", "thu", "fri", "sat");
+            var errorBox = document.getElementById("errorBox");
+            errorBox.style.display = "none";
+
+            var sales = new Array();
+            var total = 0;
+
+            for (var i = 0; i < 6; i++) {
+                var valStr = document.getElementById(ids.at(i)).value.trim();
+                var num = parseFloat(valStr);
+                if (valStr === "" || isNaN(num)) {
+                    errorBox.textContent = "Invalid input for " + days.at(i) + ". Please enter a number.";
+                    errorBox.style.display = "block";
+                    return;
+                }
+                if (num < 0) {
+                    errorBox.textContent = "Sales cannot be negative (" + days.at(i) + ").";
+                    errorBox.style.display = "block";
+                    return;
+                }
+                sales.push(num);
+                total += num;
+            }
+
+            if (total === 0) {
+                errorBox.textContent = "Total sales are KES 0.00. Cannot create a pie chart.";
+                errorBox.style.display = "block";
+                return;
+            }
+
+            document.getElementById("placeholder").style.display = "none";
+            var canvas = document.getElementById("pieCanvas");
+            canvas.style.display = "block";
+            document.getElementById("summaryTable").style.display = "table";
+            document.getElementById("printBtn").disabled = false;
+            document.getElementById("subtitle").textContent = "Generated on " + new Date().toLocaleDateString() + " • Total Weekly Sales: " + formatKes(total);
+
+            var ctx = canvas.getContext("2d");
+            var cx = canvas.width / 2;
+            var cy = canvas.height / 2;
+            var r = 155;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            var startAngle = -Math.PI / 2;
+            var tbody = document.getElementById("summaryBody");
+            tbody.innerHTML = "";
+
+            for (var j = 0; j < 6; j++) {
+                var val = sales.at(j);
+                var pct = ((val / total) * 100).toFixed(1);
+
+                if (val > 0) {
+                    var sliceAngle = (val / total) * 2 * Math.PI;
+                    var endAngle = startAngle + sliceAngle;
+
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.arc(cx, cy, r, startAngle, endAngle);
+                    ctx.closePath();
+                    ctx.fillStyle = colors.at(j);
+                    ctx.fill();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = "#ffffff";
+                    ctx.stroke();
+
+                    if (parseFloat(pct) >= 5) {
+                        var mid = startAngle + sliceAngle / 2;
+                        var tx = cx + Math.cos(mid) * (r * 0.64);
+                        var ty = cy + Math.sin(mid) * (r * 0.64);
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = "bold 12px sans-serif";
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText(days.at(j), tx, ty - 7);
+                        ctx.font = "11px sans-serif";
+                        ctx.fillText(pct + "%", tx, ty + 7);
+                    }
+                    startAngle = endAngle;
+                }
+
+                var row = document.createElement("tr");
+                row.innerHTML = '<td><span class="dot" style="background:' + colors.at(j) + ';"></span>' + days.at(j) + '</td><td>' + formatKes(val) + '</td><td>' + pct + '%</td>';
+                tbody.appendChild(row);
+            }
+
+            var totalRow = document.createElement("tr");
+            totalRow.innerHTML = '<td>Total Weekly Sales</td><td>' + formatKes(total) + '</td><td>100.0%</td>';
+            tbody.appendChild(totalRow);
+        }
+    </script>
+</body>
+
+</html>
